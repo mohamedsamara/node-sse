@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Server-Sent-Events Notifications</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+      }
+
+      .notifications {
+        background-color: #f0f8ff;
+        padding: 10px;
+        margin-bottom: 20px;
+        border: 1px solid #b0c4de;
+      }
+
+      p {
+        font-size: 16px;
+        margin: 5px 0;
+      }
+
+      .notification {
+        color: #007bff;
+        font-weight: bold;
+      }
+
+      .btn {
+        background-color: #ff4c4c;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        cursor: pointer;
+        margin-top: 20px;
+      }
+
+      .btn:hover {
+        background-color: #ff3333;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Server-Sent Events Notifications</h1>
+
+    <div id="notifications" class="notifications">
+      <h2>Notifications</h2>
+      <div id="notification-messages"></div>
+    </div>
+
+    <button id="stop-sse-btn" class="btn">Stop Notifications</button>
+
+    <script>
+      // Check if the browser supports the Notification API
+      if ("Notification" in window) {
+        // Request permission to show notifications
+        Notification.requestPermission().then((permission) => {
+          if (permission === "granted") {
+            console.log("Notification permission granted.");
+          } else {
+            console.log("Notification permission denied.");
+          }
+        });
+      }
+
+      // Create an EventSource instance to listen for notifications
+      const eventSource = new EventSource("/events");
+
+      // Listen for 'notification' events (custom event type sent by the server)
+      eventSource.addEventListener("notification", function (event) {
+        // Show a browser notification
+        if ("Notification" in window && Notification.permission === "granted") {
+          const notification = new Notification("New Notification", {
+            body: event.data,
+          });
+
+          // Add an event listener for when the notification is clicked
+          notification.onclick = function () {
+            console.log("Notification clicked!");
+            window.focus();
+          };
+        }
+
+        // Display the notification message on the page
+        const notificationDiv = document.getElementById(
+          "notification-messages"
+        );
+        const notificationElement = document.createElement("p");
+        notificationElement.classList.add("notification");
+        notificationElement.textContent = event.data;
+        notificationDiv.appendChild(notificationElement);
+      });
+
+      eventSource.onerror = function (error) {
+        console.error("EventSource failed:", error);
+      };
+
+      // Stop Notifications button and click listener
+      const stopBtn = document.getElementById("stop-sse-btn");
+      stopBtn.addEventListener("click", function () {
+        eventSource.close();
+        console.log(
+          "SSE connection closed. No more notifications will be received."
+        );
+        stopBtn.disabled;
+        stopBtn.textContent = "Notifications Stopped";
+      });
+    </script>
+  </body>
+</html>
